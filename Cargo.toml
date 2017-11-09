@@ -1,0 +1,8 @@
+[package]
+name = "piston_ant"
+version = "0.1.0"
+authors = ["Josef Kuchař <email@josefkuchar.cz>"]
+
+[dependencies]
+piston_window = "0.73.0"
+rand = "0.3.18"
