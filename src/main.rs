@@ -1,9 +1,11 @@
 extern crate piston_window;
 extern crate rand;
+extern crate opengl_graphics;
+extern crate piston;
 
 use rand::distributions::{IndependentSample, Range};
 use piston_window::*;
-
+use opengl_graphics::{ OpenGL };
 
 struct World {
     ants: Vec<Ant>,
@@ -100,15 +102,17 @@ struct Ant {
 }
 
 impl Ant {
-    fn new() -> Ant {
+    fn new(grid_size: &Vector) -> Ant {
         let mut rng = rand::thread_rng();
         let range = Range::new(0.0, 1.0);
+        let x_range = Range::new(0, grid_size.x);
+        let y_range = Range::new(0, grid_size.y);
 
         return Ant {
             color: [range.ind_sample(&mut rng) as f32, range.ind_sample(&mut rng) as f32, range.ind_sample(&mut rng) as f32, 1.0],
             position: iVector {
-                x: 50,
-                y: 50
+                x: x_range.ind_sample(&mut rng) as isize,
+                y: y_range.ind_sample(&mut rng) as isize
             },
             direction: 3
         }
@@ -133,21 +137,33 @@ impl Ant {
 }
 
 fn main() {
-    let mut world = World::new(100, 100);
-    world.add_ant(Ant::new());
-    world.add_ant(Ant::new());
-    let size = 5.0;
-    let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).build().unwrap();
-    while let Some(event) = window.next() {
-        window.draw_2d(&event, |context, graphics| {
-            world.update();
-            world.update();
-            world.update();
-            world.update();
+    let mut world = World::new(300, 300);
+
+    let opengl = OpenGL::V3_2;
+
+    for i in 0..7
+     {
+        let ant = Ant::new(&world.grid.size);
+        world.add_ant(ant);
+    }
+    let size = 2.0;
+
+    let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
+    
+    let mut events = Events::new(EventSettings::new().lazy(true));
+    while let Some(e) = window.next() {
+        window.draw_2d(&e, |context, graphics| {
+            for i in 0..3 {
+                world.update();
+            }
 
             clear([1.0; 4], graphics);
             
             for (index, tile) in world.grid.tiles.iter().enumerate() {
+                if *tile == [1.0; 4] {
+                    continue
+                }
+
                 let x = index / world.grid.size.x;
                 let y = index % world.grid.size.x;
                 rectangle(
