@@ -2,6 +2,7 @@ extern crate piston_window;
 extern crate rand;
 extern crate opengl_graphics;
 extern crate piston;
+extern crate image;
 
 use rand::distributions::{IndependentSample, Range};
 use piston_window::*;
@@ -33,13 +34,13 @@ impl World {
 
 struct Grid {
     size: Vector,
-    tiles: Vec<[f32; 4]>
+    tiles: Vec<[u8; 4]>
 }
 
 impl Grid {
     fn new(width: usize, height: usize) -> Grid {
         return Grid {
-            tiles: vec![[1.0, 1.0, 1.0, 1.0]; width * height],
+            tiles: vec![[255; 4]; width * height],
             size: Vector {
                 x: width,
                 y: height
@@ -47,13 +48,13 @@ impl Grid {
         }
     }
 
-    fn set(&mut self, position: &mut iVector, value: [f32; 4]) {
+    fn set(&mut self, position: &mut iVector, value: [u8; 4]) {
         self.bound_position(position);
 
         self.tiles[self.size.x * position.x as usize + position.y as usize] = value;
     }
 
-    fn get(&self, position: &mut iVector) -> [f32; 4] {
+    fn get(&self, position: &mut iVector) -> [u8; 4] {
         self.bound_position(position);
 
         return self.tiles[self.size.x * position.x as usize + position.y as usize];
@@ -96,7 +97,7 @@ struct Vector {
 }
 
 struct Ant {
-    color: [f32; 4],
+    color: [u8; 4],
     position: iVector,
     direction: usize
 }
@@ -104,12 +105,12 @@ struct Ant {
 impl Ant {
     fn new(grid_size: &Vector) -> Ant {
         let mut rng = rand::thread_rng();
-        let range = Range::new(0.0, 1.0);
+        let range = Range::new(0, 256);
         let x_range = Range::new(0, grid_size.x);
         let y_range = Range::new(0, grid_size.y);
 
         return Ant {
-            color: [range.ind_sample(&mut rng) as f32, range.ind_sample(&mut rng) as f32, range.ind_sample(&mut rng) as f32, 1.0],
+            color: [range.ind_sample(&mut rng) as u8, range.ind_sample(&mut rng) as u8, range.ind_sample(&mut rng) as u8, 255],
             position: iVector {
                 x: x_range.ind_sample(&mut rng) as isize,
                 y: y_range.ind_sample(&mut rng) as isize
@@ -122,14 +123,14 @@ impl Ant {
         static DIRECTIONS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
         let color = world.get(&mut self.position);
 
-        if color[0] == 1.0 && color[1] == 1.0 && color[2] == 1.0 {
+        if color[0] == 255 && color[1] == 255 && color[2] == 255 {
             self.direction += 1;
             self.direction %= 4;
             world.set(&mut self.position, self.color)
         } else {
             self.direction += 3;
             self.direction %= 4;
-            world.set(&mut self.position, [1.0; 4])
+            world.set(&mut self.position, [255; 4])
         }
 
         self.position.add(DIRECTIONS[self.direction]);
@@ -137,7 +138,7 @@ impl Ant {
 }
 
 fn main() {
-    let mut world = World::new(300, 300);
+    let mut world = World::new(1000, 1000);
 
     let opengl = OpenGL::V3_2;
 
@@ -149,30 +150,37 @@ fn main() {
     let size = 2.0;
 
     let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
+
+    let mut canvas = image::ImageBuffer::new(1000, 1000);
+    let mut texture = Texture::from_image(
+        &mut window.factory,
+        &canvas,
+        &TextureSettings::new()
+    ).unwrap();
     
-    let mut events = Events::new(EventSettings::new().lazy(true));
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |context, graphics| {
-            for i in 0..3 {
+        
+        if let Some(args) = e.update_args() {
+            for i in 0..100 {
                 world.update();
             }
-
-            clear([1.0; 4], graphics);
-            
+        }
+        
+        if let Some(args) = e.render_args() {
             for (index, tile) in world.grid.tiles.iter().enumerate() {
-                if *tile == [1.0; 4] {
-                    continue
-                }
 
                 let x = index / world.grid.size.x;
                 let y = index % world.grid.size.x;
-                rectangle(
-                    *tile,
-                    [size * (x as f64), size * (y as f64), size, size],
-                    context.transform,
-                    graphics
-                );
+                
+                canvas.put_pixel(x as u32, y as u32, image::Rgba(*tile));
             }
-        });
+
+            texture.update(&mut window.encoder, &canvas).unwrap();
+
+            window.draw_2d(&e, |c, g| {
+                clear([0.0; 4], g);
+                image(&texture, c.transform, g);
+            });
+        }
     }
 }
