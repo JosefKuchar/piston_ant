@@ -138,11 +138,11 @@ impl Ant {
 }
 
 fn main() {
-    let mut world = World::new(1000, 1000);
+    let mut world = World::new(250, 250);
 
     let opengl = OpenGL::V3_2;
 
-    for i in 0..7
+    for _ in 0..7
      {
         let ant = Ant::new(&world.grid.size);
         world.add_ant(ant);
@@ -151,17 +151,17 @@ fn main() {
 
     let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
 
-    let mut canvas = image::ImageBuffer::new(1000, 1000);
+    let mut canvas = image::ImageBuffer::new(250, 250);
     let mut texture = Texture::from_image(
         &mut window.factory,
         &canvas,
-        &TextureSettings::new()
+        &TextureSettings::new().filter(texture::Filter::Nearest)
     ).unwrap();
-    
+
     while let Some(e) = window.next() {
         
         if let Some(args) = e.update_args() {
-            for i in 0..100 {
+            for _ in 0..100 {
                 world.update();
             }
         }
@@ -179,7 +179,7 @@ fn main() {
 
             window.draw_2d(&e, |c, g| {
                 clear([0.0; 4], g);
-                image(&texture, c.transform, g);
+                image(&texture, c.transform.scale(4., 4.), g);
             });
         }
     }
