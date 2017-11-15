@@ -51,13 +51,13 @@ impl Grid {
     fn set(&mut self, position: &mut IVector, value: [u8; 4]) {
         self.bound_position(position);
 
-        self.tiles[self.size.x * position.x as usize + position.y as usize] = value;
+        self.tiles[self.size.x * position.y as usize + position.x as usize] = value;
     }
 
     fn get(&self, position: &mut IVector) -> [u8; 4] {
         self.bound_position(position);
 
-        return self.tiles[self.size.x * position.x as usize + position.y as usize];
+        return self.tiles[self.size.x * position.y as usize + position.x as usize];
     }
 
     fn bound_position(&self, position: &mut IVector) {
@@ -138,9 +138,9 @@ impl Ant {
 }
 
 fn main() {
-    let width = 500;
-    let height = 500;
-
+    let width = 640;
+    let height = 360;
+    
     let mut world = World::new(width, height);
 
     let opengl = OpenGL::V3_2;
@@ -165,7 +165,7 @@ fn main() {
     while let Some(e) = window.next() {
         
         if let Some(_) = e.update_args() {
-            for _ in 0..5 {
+            for _ in 0..300 {
                 world.update();
             }
         }
@@ -174,8 +174,8 @@ fn main() {
             
             for (index, tile) in world.grid.tiles.iter().enumerate() {
 
-                let x = index / world.grid.size.x;
-                let y = index % world.grid.size.x;
+                let x = index % world.grid.size.x;
+                let y = index / world.grid.size.x;
                 
                 canvas.put_pixel(x as u32, y as u32, image::Rgba(*tile));
             }
