@@ -48,19 +48,19 @@ impl Grid {
         }
     }
 
-    fn set(&mut self, position: &mut iVector, value: [u8; 4]) {
+    fn set(&mut self, position: &mut IVector, value: [u8; 4]) {
         self.bound_position(position);
 
         self.tiles[self.size.x * position.x as usize + position.y as usize] = value;
     }
 
-    fn get(&self, position: &mut iVector) -> [u8; 4] {
+    fn get(&self, position: &mut IVector) -> [u8; 4] {
         self.bound_position(position);
 
         return self.tiles[self.size.x * position.x as usize + position.y as usize];
     }
 
-    fn bound_position(&self, position: &mut iVector) {
+    fn bound_position(&self, position: &mut IVector) {
         if position.x < 0 {
             position.x += self.size.x as isize;
         }   
@@ -79,12 +79,12 @@ impl Grid {
     }
 }
 
-struct iVector {
+struct IVector {
     x: isize,
     y: isize,
 }
 
-impl iVector {
+impl IVector {
     fn add(&mut self, array: [isize; 2]) {
         self.x += array[0];
         self.y += array[1];
@@ -98,7 +98,7 @@ struct Vector {
 
 struct Ant {
     color: [u8; 4],
-    position: iVector,
+    position: IVector,
     direction: usize
 }
 
@@ -111,7 +111,7 @@ impl Ant {
 
         return Ant {
             color: [range.ind_sample(&mut rng) as u8, range.ind_sample(&mut rng) as u8, range.ind_sample(&mut rng) as u8, 255],
-            position: iVector {
+            position: IVector {
                 x: x_range.ind_sample(&mut rng) as isize,
                 y: y_range.ind_sample(&mut rng) as isize
             },
@@ -138,7 +138,10 @@ impl Ant {
 }
 
 fn main() {
-    let mut world = World::new(250, 250);
+    let width = 500;
+    let height = 500;
+
+    let mut world = World::new(width, height);
 
     let opengl = OpenGL::V3_2;
 
@@ -147,11 +150,12 @@ fn main() {
         let ant = Ant::new(&world.grid.size);
         world.add_ant(ant);
     }
-    let size = 2.0;
+
+    let mut zoom = 1.0;
 
     let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
 
-    let mut canvas = image::ImageBuffer::new(250, 250);
+    let mut canvas = image::ImageBuffer::new(width as u32, height as u32);
     let mut texture = Texture::from_image(
         &mut window.factory,
         &canvas,
@@ -160,13 +164,14 @@ fn main() {
 
     while let Some(e) = window.next() {
         
-        if let Some(args) = e.update_args() {
-            for _ in 0..100 {
+        if let Some(_) = e.update_args() {
+            for _ in 0..5 {
                 world.update();
             }
         }
         
-        if let Some(args) = e.render_args() {
+        if let Some(_) = e.render_args() {
+            
             for (index, tile) in world.grid.tiles.iter().enumerate() {
 
                 let x = index / world.grid.size.x;
@@ -179,8 +184,16 @@ fn main() {
 
             window.draw_2d(&e, |c, g| {
                 clear([0.0; 4], g);
-                image(&texture, c.transform.scale(4., 4.), g);
+                image(&texture, c.transform.scale(zoom, zoom), g);
             });
         }
+
+        e.mouse_scroll(|_, y| {
+            zoom += y;
+
+            if zoom < 1.0 {
+                zoom = 1.0;
+            }
+        });
     }
 }
