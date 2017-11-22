@@ -3,13 +3,14 @@ extern crate rand;
 extern crate opengl_graphics;
 extern crate piston;
 extern crate image;
-#[macro_use]
-extern crate clap;
+extern crate raster;
 
-use clap::{App, Arg};
 use rand::distributions::{IndependentSample, Range};
 use piston_window::*;
 use opengl_graphics::{ OpenGL };
+
+use std::fs::File;
+use std::path::Path;
 
 struct World {
     ants: Vec<Ant>,
@@ -141,76 +142,59 @@ impl Ant {
 }
 
 fn main() {
-    // Define parser
-    let matches = App::new("piston-ant")
-        .version("1.0.0")
-        .about("Langton's ant implementation")
-        .author("Josef Kuchař")
-        .arg(Arg::with_name("generate")
-            .short("g")
-            .long("generate")
-            .value_name("PATH")
-            .help("Render images into files")
-            .takes_value(true))
-        .arg(Arg::with_name("width")
-            .short("x")
-            .long("width")
-            .value_name("INTEGER")
-            .help("Width of canvas")
-            .default_value("100")
-            .takes_value(true))
-        .arg(Arg::with_name("height")
-            .short("y")
-            .long("height")
-            .value_name("INTEGER")
-            .help("Height of canvas")
-            .default_value("100")
-            .takes_value(true))
-        .arg(Arg::with_name("speed")
-            .short("s")
-            .long("speed")
-            .value_name("INTEGER")
-            .help("Iterations per update")
-            .default_value("20")
-            .takes_value(true))
-        .arg(Arg::with_name("ants")
-            .short("a")
-            .long("ants")
-            .value_name("INTEGER")
-            .help("Number of ants")
-            .default_value("5")
-            .takes_value(true))
-        .get_matches();
-
-    // Parse arguments
-    let width = value_t_or_exit!(matches.value_of("width"), usize);
-    let height = value_t_or_exit!(matches.value_of("height"), usize);
-    let ants = value_t_or_exit!(matches.value_of("ants"), usize);
-    let speed = value_t_or_exit!(matches.value_of("speed"), usize);
-    //let path = value_t_or_exit!(matches.value_of("path"));
+    let width = 640;
+    let height = 360;
+    //let width = 960;
+    //let height = 540;
 
     let mut world = World::new(width, height);
 
-    for _ in 0..ants
+    let opengl = OpenGL::V3_2;
+
+    for _ in 0..9
      {
         let ant = Ant::new(&world.grid.size);
         world.add_ant(ant);
     }
 
     let mut zoom = 1.0;
-    let opengl = OpenGL::V3_2;
-    let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
+
+    //let mut window: PistonWindow = WindowSettings::new("Piston Ant", [1920, 1080]).fullscreen(true).exit_on_esc(true).opengl(opengl).build().unwrap();
+
     let mut canvas = image::ImageBuffer::new(width as u32, height as u32);
-    let mut texture = Texture::from_image(
+    /*let mut texture = Texture::from_image(
         &mut window.factory,
         &canvas,
         &TextureSettings::new().filter(texture::Filter::Nearest)
-    ).unwrap();
+    ).unwrap();*/
 
+    for index in 0..18000 {
+        for _ in 0..50 {
+            world.update();
+        }
+
+        for (index, tile) in world.grid.tiles.iter().enumerate() {
+
+            let x = index % world.grid.size.x;
+            let y = index / world.grid.size.x;
+                
+            canvas.put_pixel(x as u32, y as u32, image::Rgba(*tile));
+        }
+
+        // Save the image as “fractal.png”
+        let ref mut fout = File::create(format!("frames/frame{}.png", index)).unwrap();
+
+        // We must indicate the image's color type and what format to save as
+        //image::ImageRgba8(canvas).save(fout, image::PNG).unwrap();
+        image::save_buffer(format!("frames/frame{}.png", index), &canvas, width as u32, height as u32, image::RGBA(8));
+    }
+
+    
+    /*
     while let Some(e) = window.next() {
         
         if let Some(_) = e.update_args() {
-            for _ in 0..speed {
+            for _ in 0..50 {
                 world.update();
             }
         }
@@ -240,5 +224,5 @@ fn main() {
                 zoom = 1.0;
             }
         });
-    }
+    }*/
 }
