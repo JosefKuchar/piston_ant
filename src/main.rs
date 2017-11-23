@@ -278,6 +278,13 @@ fn main() {
             .help("Number of cycles, only with generate option")
             .default_value("0")
             .takes_value(true))
+        .arg(Arg::with_name("zoom")
+            .short("z")
+            .long("zoom")
+            .value_name("INTEGER")
+            .help("Initial zoom, also for generate option")
+            .default_value("1")
+            .takes_value(true))
         .get_matches();
 
     // Parse arguments
@@ -286,12 +293,13 @@ fn main() {
     let ants = value_t_or_exit!(matches.value_of("ants"), usize);
     let speed = value_t_or_exit!(matches.value_of("speed"), usize);
     let cycles = value_t_or_exit!(matches.value_of("cycles"), usize);
+    let zoom = value_t_or_exit!(matches.value_of("zoom"), usize);
 
     let mut app = Application {
         world: World::new(width, height),
         ants: ants,
         speed: speed,
-        zoom: 2.0,
+        zoom: zoom as f64,
         canvas: image::ImageBuffer::new(width as u32, height as u32)
     };
 
