@@ -14,6 +14,7 @@ use std::path::Path;
 use std::fs::File;
 use image::{ImageBuffer, RGBA, Rgba};
 use texture::Filter;
+use std::process;
 
 struct World {
     ants: Vec<Ant>,
@@ -149,16 +150,16 @@ struct Application {
     ants: usize,
     speed: usize,
     zoom: f64,
-    canvas: ImageBuffer<Rgba<u8>, Vec<u8>>
 }
 
 impl Application {
     fn run(&mut self) {
+        let mut canvas = ImageBuffer::new(self.world.grid.size.x as u32, self.world.grid.size.y as u32);
         let opengl = OpenGL::V3_2;
         let mut window: PistonWindow = WindowSettings::new("Piston Ant", [640, 480]).opengl(opengl).build().unwrap();
         let mut texture = Texture::from_image(
             &mut window.factory,
-            &self.canvas,
+            &canvas,
             &TextureSettings::new().filter(Filter::Nearest)
         ).unwrap();
 
@@ -177,10 +178,10 @@ impl Application {
                     let x = index % self.world.grid.size.x;
                     let y = index / self.world.grid.size.x;
                 
-                    self.canvas.put_pixel(x as u32, y as u32, image::Rgba(*tile));
+                    canvas.put_pixel(x as u32, y as u32, Rgba(*tile));
                 }
 
-                texture.update(&mut window.encoder, &self.canvas).unwrap();
+                texture.update(&mut window.encoder, &canvas).unwrap();
 
                 window.draw_2d(&e, |c, g| {
                     clear([0.0; 4], g);
@@ -198,7 +199,7 @@ impl Application {
     }
 
     fn generate(&mut self, cycles: usize, basepath: &Path) {
-        self.canvas = image::ImageBuffer::new(self.world.grid.size.x as u32 * self.zoom as u32, self.world.grid.size.y as u32 * self.zoom as u32);
+        let mut canvas = ImageBuffer::new(self.world.grid.size.x as u32 * self.zoom as u32, self.world.grid.size.y as u32 * self.zoom as u32);
 
         for cycle in 0..cycles {
             for _ in 0..self.speed {
@@ -211,7 +212,7 @@ impl Application {
 
                 for i in 0..self.zoom as u32 {
                     for j in 0..self.zoom as u32 {
-                        self.canvas.put_pixel((x as u32 * self.zoom as u32) + i, (y as u32 * self.zoom as u32) + j, image::Rgba(*tile));
+                        canvas.put_pixel((x as u32 * self.zoom as u32) + i, (y as u32 * self.zoom as u32) + j, image::Rgba(*tile));
                     }
                 }
             }
@@ -220,7 +221,7 @@ impl Application {
             File::create(&path).unwrap();
             
             File::create(&path).unwrap();
-            image::save_buffer(&path, &self.canvas, self.world.grid.size.x as u32 * self.zoom as u32, self.world.grid.size.y as u32 * self.zoom as u32, RGBA(8)).unwrap();
+            image::save_buffer(&path, &canvas, self.world.grid.size.x as u32 * self.zoom as u32, self.world.grid.size.y as u32 * self.zoom as u32, RGBA(8)).unwrap();
         }
     }
 
@@ -299,8 +300,7 @@ fn main() {
         world: World::new(width, height),
         ants: ants,
         speed: speed,
-        zoom: zoom as f64,
-        canvas: image::ImageBuffer::new(width as u32, height as u32)
+        zoom: zoom as f64
     };
 
     app.add_ants();
@@ -309,7 +309,7 @@ fn main() {
         let path = matches.value_of("generate").unwrap();
         if Path::new(path).exists() {
             app.generate(cycles, Path::new(path));
-            std::process::exit(0);
+            process::exit(0);
         } else {
             Error::exit(&Error::with_description("Path is not valid", clap::ErrorKind::InvalidValue));
         }

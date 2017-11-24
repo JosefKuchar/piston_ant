@@ -1,6 +1,6 @@
 [package]
 name = "piston_ant"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Josef Kuchař <email@josefkuchar.cz>"]
 
 [dependencies]
