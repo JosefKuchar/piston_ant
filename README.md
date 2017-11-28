@@ -1,7 +1,7 @@
 # Piston Ant
 [![Build Status](https://travis-ci.org/JosefKuchar/piston_ant.svg?branch=master)](https://travis-ci.org/JosefKuchar/piston_ant)
 
-![Piston Ant](http://via.placeholder.com/888x512)
+![Piston Ant](extra/animation.gif)
 
 Langton's Ant written in Rust with Piston framework
 
